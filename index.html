@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+</head>
+<body>
+  <div id="map" style="height: 100vh;"></div>
+  <script>
+    // Initialize the map
+    const map = L.map('map').setView([0, 0], 2); // Neutral view, updated with fitBounds
+
+    // Add a base map layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Load GeoJSON with points
+    fetch('point.json') // Replace with your GeoJSON file path
+      .then(response => response.json())
+      .then(geojsonData => {
+        // Create a marker cluster group
+        const markers = L.markerClusterGroup();
+
+        // Add GeoJSON data to the marker cluster
+        L.geoJSON(geojsonData, {
+          pointToLayer: function (feature, latlng) {
+            // Customize marker appearance here
+            return L.marker(latlng, {
+              title: feature.properties.name 
+            });
+          },
+          onEachFeature: function (feature, layer) {
+            if (feature.properties) {
+              let popupContent = '<strong>Feature Properties:</strong><br>';
+              for (const [key, value] of Object.entries(feature.properties)) {
+                popupContent += `<strong>${key}:</strong> ${value}<br>`;
+              }
+              layer.bindPopup(popupContent);
+            }
+          }
+        }).eachLayer(layer => markers.addLayer(layer));
+
+        // Add cluster group to the map
+        map.addLayer(markers);
+
+        // Adjust the map to fit all markers
+        map.fitBounds(markers.getBounds());
+      })
+      .catch(error => console.error('Error loading GeoJSON:', error));
+  </script>
+</body>
+</html>
